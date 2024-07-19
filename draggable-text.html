@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        img {
+            width: 100%;
+        }
+        input {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <input id="engraving-text" type="text" name="properties[Engraving Text]" class="engrave-text" placeholder="e.g. JML" maxlength="3" value="">
+    </div>
+    <div class="dcp-img-with-content-img">
+        <div class="image">
+            <img src="./jo_100ml_926x541_l.jpg" alt="" class="dcp-image-three" id="imageLoader" hidden>
+        </div>
+        
+        <canvas id="myCanvas" class="custom-canvas"></canvas>
+    </div>
+
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var ctx = canvas.getContext('2d');
+        var img = new Image();
+        var textX = 570, textY = 350;
+        var text_title = "";
+        var dragging = false;
+        var offsetX, offsetY;
+
+        var restrictedArea = {
+            x: 550, 
+            y: 330, 
+            width: 120, 
+            height: 120
+        };
+
+        img.crossOrigin = "anonymous";
+        img.src = document.getElementById('imageLoader').src;
+
+        img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            DrawOverlay();
+            DrawText();
+        };
+
+        document.getElementById('engraving-text').addEventListener('keyup', function() {
+            text_title = this.value;
+            DrawOverlay();
+            DrawText();
+        });
+
+        canvas.addEventListener('mousedown', function(e) {
+            var mousePos = getMousePos(canvas, e);
+            if (isMouseOnText(mousePos)) {
+                dragging = true;
+                offsetX = mousePos.x - textX;
+                offsetY = mousePos.y - textY;
+            }
+        });
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (dragging) {
+                var mousePos = getMousePos(canvas, e);
+                var newTextX = mousePos.x - offsetX;
+                var newTextY = mousePos.y - offsetY;
+                var textWidth = ctx.measureText(text_title).width;
+                var textHeight = parseInt(25, 10);
+
+                if (newTextX < restrictedArea.x) newTextX = restrictedArea.x;
+                if (newTextX + textWidth > restrictedArea.x + restrictedArea.width) newTextX = restrictedArea.x + restrictedArea.width - textWidth;
+                if (newTextY < restrictedArea.y + textHeight / 2) newTextY = restrictedArea.y + textHeight / 2;
+                if (newTextY > restrictedArea.y + restrictedArea.height - textHeight / 2) newTextY = restrictedArea.y + restrictedArea.height - textHeight / 2;
+
+                textX = newTextX;
+                textY = newTextY;
+
+                DrawOverlay();
+                DrawText();
+            }
+        });
+
+        canvas.addEventListener('mouseup', function() {
+            dragging = false;
+        });
+
+        canvas.addEventListener('mouseout', function() {
+            dragging = false;
+        });
+
+        function DrawOverlay() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'red';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(restrictedArea.x, restrictedArea.y, restrictedArea.width, restrictedArea.height);
+        }
+
+        function DrawText() {
+            ctx.fillStyle = "red";
+            ctx.textBaseline = 'middle';
+            ctx.font = "700 25px 'Montserrat'";
+            ctx.fillText(text_title, textX, textY);
+        }
+
+        function getMousePos(canvas, evt) {
+            var rect = canvas.getBoundingClientRect();
+            return {
+                x: evt.clientX - rect.left,
+                y: evt.clientY - rect.top
+            };
+        }
+
+        function isMouseOnText(mousePos) {
+            var textWidth = ctx.measureText(text_title).width;
+            return mousePos.x >= textX && mousePos.x <= textX + textWidth &&
+                   mousePos.y >= textY - 10 && mousePos.y <= textY + 10; 
+        }
+    </script>
+</body>
+</html>
